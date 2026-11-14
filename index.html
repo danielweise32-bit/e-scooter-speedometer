@@ -49,6 +49,7 @@ input,select{width:100%;padding:12px;border-radius:12px;border:1px solid var(--l
 .spec{display:flex;justify-content:space-between;gap:12px;color:var(--muted);font-size:12px;padding:8px 0}
 .spec strong{color:var(--text)}
 @media(orientation:landscape){.screen{padding:12px 70px}.speed{font-size:clamp(95px,25vw,205px)}.gps{top:16px}.start{bottom:10px}.menuBtn{top:12px;left:12px}.screen{gap:14px}.readouts{max-width:490px}.readout{padding:9px 12px}.readoutValue{font-size:20px}}
+.confettiCanvas{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:7} .toggleRow{display:flex;align-items:center;justify-content:space-between;gap:14px;color:var(--text);font-size:14px}.toggleRow input{width:22px;height:22px;accent-color:var(--accent)}
 </style>
 </head>
 <body data-theme="midnight">
@@ -59,6 +60,7 @@ input,select{width:100%;padding:12px;border-radius:12px;border:1px solid var(--l
 <div class="maxSpeed"><div class="maxLabel">Viteză maximă atinsă</div><div class="maxValue"><span id="maxSpeed">0</span> <span>km/h</span></div></div>
 <button class="start" id="startBtn">Pornește GPS</button>
 </main>
+<canvas class="confettiCanvas" id="confettiCanvas" aria-hidden="true"></canvas>
 <div class="shade" id="shade"></div>
 <aside class="drawer" id="drawer">
 <div class="drawerHead"><h2>E-Scooter Settings</h2><button class="close" id="closeBtn" aria-label="Închide">×</button></div>
@@ -79,6 +81,7 @@ input,select{width:100%;padding:12px;border-radius:12px;border:1px solid var(--l
 <button class="theme" data-theme-choice="light" aria-pressed="false"><span class="swatch" style="background:#eef3f8"></span>Light</button>
 </div>
 </section>
+<section class="section"><p class="sectionTitle">Efecte vizuale</p><label class="toggleRow" for="confettiToggle"><span>Confetti la fiecare 10 km/h</span><input id="confettiToggle" type="checkbox" checked></label><p class="note">Efectul apare când atingi 10, 20, 30 km/h și așa mai departe. Îl poți opri oricând.</p></section>
 <section class="section">
 <p class="sectionTitle">Bluetooth · KuKirin</p>
 <button class="action" id="connectBtn">Caută KuKirin prin Bluetooth</button>
@@ -91,7 +94,7 @@ input,select{width:100%;padding:12px;border-radius:12px;border:1px solid var(--l
 (()=>{
 const $=id=>document.getElementById(id);
 const speedEl=$('speed'),maxSpeedEl=$('maxSpeed'),dot=$('gpsDot'),btn=$('startBtn'),drawer=$('drawer'),shade=$('shade'),status=$('btStatus');
-let watch=null,smoothed=0,maxSpeed=0,bleDevice=null,bleServer=null;
+let watch=null,smoothed=0,maxSpeed=0,nextMilestone=10,bleDevice=null,bleServer=null;\nlet confettiEnabled=localStorage.getItem("confettiEnabled")!=="false";\nconst confettiCanvas=$("confettiCanvas"),confettiCtx=confettiCanvas.getContext("2d");let confettiParticles=[],confettiFrame=null;\nfunction resizeConfetti(){confettiCanvas.width=window.innerWidth*devicePixelRatio;confettiCanvas.height=window.innerHeight*devicePixelRatio;confettiCtx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0)}\nresizeConfetti();window.addEventListener("resize",resizeConfetti);\nfunction burstConfetti(){if(!confettiEnabled)return;const w=window.innerWidth,h=window.innerHeight;for(let i=0;i<75;i++){const a=Math.random()*Math.PI*2,sp=3+Math.random()*7;confettiParticles.push({x:w/2+(Math.random()-.5)*90,y:h*.48,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-2,rot:Math.random()*6.28,vr:(Math.random()-.5)*.25,size:4+Math.random()*5,life:65+Math.random()*25,hue:Math.random()*360})}if(!confettiFrame)animateConfetti()}\nfunction animateConfetti(){confettiCtx.clearRect(0,0,window.innerWidth,window.innerHeight);confettiParticles=confettiParticles.filter(p=>p.life>0);for(const p of confettiParticles){p.x+=p.vx;p.y+=p.vy;p.vy+=.13;p.vx*=.99;p.rot+=p.vr;p.life--;confettiCtx.save();confettiCtx.translate(p.x,p.y);confettiCtx.rotate(p.rot);confettiCtx.fillStyle=`hsl(${p.hue} 90% 60%)`;confettiCtx.fillRect(-p.size/2,-p.size/2,p.size,p.size*.65);confettiCtx.restore()}if(confettiParticles.length){confettiFrame=requestAnimationFrame(animateConfetti)}else{confettiFrame=null;confettiCtx.clearRect(0,0,window.innerWidth,window.innerHeight)}}\n$("confettiToggle").checked=confettiEnabled;$("confettiToggle").onchange=e=>{confettiEnabled=e.target.checked;localStorage.setItem("confettiEnabled",String(confettiEnabled));if(!confettiEnabled){confettiParticles=[];if(confettiFrame)cancelAnimationFrame(confettiFrame);confettiFrame=null;confettiCtx.clearRect(0,0,window.innerWidth,window.innerHeight)}};
 function menu(open){drawer.classList.toggle('open',open);shade.classList.toggle('open',open)}
 $('menuBtn').onclick=()=>menu(true);$('closeBtn').onclick=()=>menu(false);shade.onclick=()=>menu(false);
 function stopGps(){if(watch!==null)navigator.geolocation.clearWatch(watch);watch=null;dot.classList.remove('on');btn.textContent='Pornește GPS'}
@@ -99,11 +102,11 @@ function startGps(){
  if(!navigator.geolocation){btn.textContent='GPS indisponibil';return}
  if(watch!==null){stopGps();return}
  btn.textContent='Oprește GPS';
- maxSpeed=0;maxSpeedEl.textContent='0';smoothed=0;
+ maxSpeed=0;maxSpeedEl.textContent='0';smoothed=0;nextMilestone=10;
  watch=navigator.geolocation.watchPosition(p=>{
   dot.classList.add('on');let v=p.coords.speed>=0?p.coords.speed*3.6:0;if(v<1.2)v=0;
   smoothed=smoothed*.55+v*.45;speedEl.textContent=Math.round(smoothed);
-  maxSpeed=Math.max(maxSpeed,smoothed);maxSpeedEl.textContent=Math.round(maxSpeed);
+  maxSpeed=Math.max(maxSpeed,smoothed);maxSpeedEl.textContent=Math.round(maxSpeed);if(smoothed>=nextMilestone){burstConfetti();nextMilestone+=10;}
  },e=>{stopGps();btn.textContent=e.code===1?'Permite accesul GPS':'Încearcă din nou'},
  {enableHighAccuracy:true,maximumAge:500,timeout:20000});
 }
