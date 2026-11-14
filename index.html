@@ -1,10 +1,139 @@
 <!doctype html>
-<html lang="ro"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><meta name="theme-color" content="#070b12"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><title>E-Scooter Speedometer</title>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#070b12">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>E-Scooter Speedometer</title>
 <style>
-*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#070b12;color:#f7fbff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:env(safe-area-inset-top) 18px env(safe-area-inset-bottom);background:radial-gradient(circle at 50% 45%,#14243a 0,#070b12 62%)}.speedline{display:flex;align-items:baseline;justify-content:center;gap:10px;white-space:nowrap}.speed{font-size:clamp(110px,32vw,230px);font-weight:650;line-height:.9;letter-spacing:-.085em;font-variant-numeric:tabular-nums}.unit{font-size:clamp(20px,5vw,30px);font-weight:600;color:#55d9ff}.gps{position:absolute;top:max(22px,env(safe-area-inset-top));left:50%;width:9px;height:9px;transform:translateX(-50%);border-radius:50%;background:#64748b}.gps.on{background:#52e0a0;box-shadow:0 0 15px #52e0a0}.start{position:absolute;bottom:max(25px,env(safe-area-inset-bottom));border:1px solid #ffffff20;border-radius:30px;background:#ffffff0d;color:#aebbd0;padding:12px 20px;font-weight:600}.menuBtn{position:absolute;top:max(18px,env(safe-area-inset-top));left:18px;width:46px;height:46px;border:1px solid #ffffff20;border-radius:14px;background:#ffffff0d;color:white;font-size:25px;z-index:5}.shade{position:fixed;inset:0;background:#0009;z-index:8;opacity:0;pointer-events:none}.drawer{position:fixed;z-index:9;top:0;bottom:0;left:0;width:min(360px,88vw);padding:calc(env(safe-area-inset-top) + 22px) 22px calc(env(safe-area-inset-bottom) + 22px);background:#101b2b;transform:translateX(-105%);transition:transform .25s;overflow:auto}.drawer.open{transform:translateX(0)}.shade.open{opacity:1;pointer-events:auto}.drawerHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px}.drawer h2{font-size:20px}.close{background:none;border:0;color:#aebbd0;font-size:28px}.field{display:block;color:#9eafc7;font-size:12px;margin:18px 0 7px}input{width:100%;padding:13px;border-radius:12px;border:1px solid #ffffff20;background:#091321;color:white}.action{width:100%;margin-top:14px;padding:14px;border:0;border-radius:13px;background:#55d9ff;color:#07121e;font-weight:700}.secondary{background:#ffffff12;color:#eaf4ff}.status,.note{font-size:13px;line-height:1.5;color:#aebbd0;margin-top:15px}.note{font-size:12px;color:#7f91aa}@media(orientation:landscape){.screen{padding:12px 70px}.speed{font-size:clamp(100px,25vw,210px)}.gps{top:16px}.start{bottom:12px}.menuBtn{top:12px;left:12px}}
-</style></head><body>
-<main class="screen"><button class="menuBtn" id="menuBtn" aria-label="Meniu">☰</button><div class="gps" id="gpsDot"></div><div class="speedline"><span class="speed" id="speed">0</span><span class="unit">km/h</span></div><button class="start" id="startBtn">Pornește GPS</button></main>
-<div class="shade" id="shade"></div><aside class="drawer" id="drawer"><div class="drawerHead"><h2>Setări trotinetă</h2><button class="close" id="closeBtn">×</button></div><label class="field" for="scooterName">Numele trotinetei</label><input id="scooterName" placeholder="Ex. Trotineta mea"><label class="field" for="scooterModel">Model</label><input id="scooterModel" placeholder="Ex. KuKirin G2 Master"><button class="action" id="saveBtn">Salvează trotineta</button><button class="action secondary" id="connectBtn">Conectare Bluetooth</button><div class="status" id="btStatus">Nicio trotinetă conectată.</div><p class="note">Viteza este calculată prin GPS. Citirea voltajului și bateriei necesită protocolul Bluetooth al modelului. Safari pe iPhone nu suportă Web Bluetooth.</p></aside>
+:root{--bg:#070b12;--surface:#121d2c;--surface2:#1a2940;--text:#f7fbff;--muted:#91a2b9;--accent:#55d9ff;--accentSoft:#55d9ff22;--line:#ffffff1a;--glow:#55d9ff33}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+body[data-theme="violet"]{--bg:#0d0917;--surface:#1b1430;--surface2:#292044;--accent:#c4a1ff;--accentSoft:#c4a1ff22;--glow:#c4a1ff33}
+body[data-theme="emerald"]{--bg:#06130f;--surface:#10271f;--surface2:#17372b;--accent:#54e6a0;--accentSoft:#54e6a022;--glow:#54e6a033}
+body[data-theme="amber"]{--bg:#171006;--surface:#2a1d0c;--surface2:#3a2910;--accent:#ffc56b;--accentSoft:#ffc56b22;--glow:#ffc56b33}
+body[data-theme="light"]{--bg:#eef3f8;--surface:#ffffff;--surface2:#e3ebf4;--text:#0b1420;--muted:#58687b;--accent:#087eae;--accentSoft:#087eae18;--glow:#087eae20;--line:#0b14201a}
+.screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:calc(env(safe-area-inset-top) + 66px) 18px calc(env(safe-area-inset-bottom) + 32px);background:radial-gradient(circle at 50% 42%,var(--surface2) 0,var(--bg) 66%);gap:26px}
+.speedline{display:flex;align-items:baseline;justify-content:center;gap:10px;white-space:nowrap}
+.speed{font-size:clamp(112px,33vw,230px);font-weight:650;line-height:.9;letter-spacing:-.085em;font-variant-numeric:tabular-nums}
+.unit{font-size:clamp(20px,5vw,30px);font-weight:650;color:var(--accent)}
+.gps{position:absolute;top:max(22px,env(safe-area-inset-top));left:50%;width:9px;height:9px;transform:translateX(-50%);border-radius:50%;background:#64748b}
+.gps.on{background:#52e0a0;box-shadow:0 0 15px #52e0a0}
+.menuBtn{position:absolute;top:max(16px,env(safe-area-inset-top));left:16px;width:46px;height:46px;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--text);font-size:25px;z-index:5}
+.start{position:absolute;bottom:max(16px,env(safe-area-inset-bottom));border:1px solid var(--line);border-radius:30px;background:var(--surface);color:var(--muted);padding:11px 19px;font-weight:650}
+.readouts{width:min(520px,100%);display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.readout{background:var(--surface);border:1px solid var(--line);border-radius:17px;padding:13px 15px;min-width:0}
+.readoutLabel{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
+.readoutValue{font-size:25px;font-weight:700;font-variant-numeric:tabular-nums}
+.readoutValue em{font-size:13px;font-style:normal;color:var(--accent);font-weight:650}
+.readoutHint{font-size:10px;color:var(--muted);margin-top:4px}
+.shade{position:fixed;inset:0;background:#0009;z-index:8;opacity:0;pointer-events:none;transition:opacity .2s}
+.drawer{position:fixed;z-index:9;top:0;bottom:0;left:0;width:min(380px,90vw);padding:calc(env(safe-area-inset-top) + 20px) 20px calc(env(safe-area-inset-bottom) + 20px);background:var(--surface);transform:translateX(-105%);transition:transform .25s;overflow:auto;border-right:1px solid var(--line)}
+.drawer.open{transform:translateX(0)}.shade.open{opacity:1;pointer-events:auto}
+.drawerHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}
+.drawerHead h2{font-size:20px;margin:0}.close{background:none;border:0;color:var(--muted);font-size:29px}
+.section{border-top:1px solid var(--line);padding:17px 0}.section:first-of-type{border-top:0}
+.sectionTitle{font-size:13px;font-weight:750;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 12px}
+.field{display:block;color:var(--muted);font-size:12px;margin:12px 0 6px}
+input,select{width:100%;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--text);font:inherit}
+.action{width:100%;margin-top:10px;padding:13px;border:0;border-radius:13px;background:var(--accent);color:var(--bg);font-weight:750}
+.secondary{background:var(--surface2);color:var(--text);border:1px solid var(--line)}
+.status{font-size:12px;line-height:1.5;color:var(--muted);margin-top:10px}
+.note{font-size:11px;line-height:1.5;color:var(--muted);margin:9px 0 0}
+.themeGrid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.theme{border:1px solid var(--line);background:var(--surface2);border-radius:12px;padding:8px 3px;color:var(--text);font-size:10px}
+.swatch{display:block;width:22px;height:22px;border-radius:50%;margin:0 auto 6px;border:2px solid #ffffff55}
+.theme[aria-pressed="true"]{outline:2px solid var(--accent);outline-offset:2px}
+.spec{display:flex;justify-content:space-between;gap:12px;color:var(--muted);font-size:12px;padding:8px 0}
+.spec strong{color:var(--text)}
+@media(orientation:landscape){.screen{padding:12px 70px}.speed{font-size:clamp(95px,25vw,205px)}.gps{top:16px}.start{bottom:10px}.menuBtn{top:12px;left:12px}.screen{gap:14px}.readouts{max-width:490px}.readout{padding:9px 12px}.readoutValue{font-size:20px}}
+</style>
+</head>
+<body data-theme="midnight">
+<main class="screen">
+<button class="menuBtn" id="menuBtn" aria-label="Meniu">☰</button>
+<div class="gps" id="gpsDot"></div>
+<div class="speedline"><span class="speed" id="speed">0</span><span class="unit">km/h</span></div>
+<div class="readouts">
+<div class="readout"><div class="readoutLabel">Tensiune baterie</div><div class="readoutValue" id="voltage">— <em>V</em></div><div class="readoutHint">Așteaptă date reale Bluetooth</div></div>
+<div class="readout"><div class="readoutLabel">Baterie</div><div class="readoutValue" id="battery">— <em>%</em></div><div class="readoutHint">Așteaptă date reale Bluetooth</div></div>
+</div>
+<button class="start" id="startBtn">Pornește GPS</button>
+</main>
+<div class="shade" id="shade"></div>
+<aside class="drawer" id="drawer">
+<div class="drawerHead"><h2>E-Scooter Settings</h2><button class="close" id="closeBtn" aria-label="Închide">×</button></div>
+<section class="section">
+<p class="sectionTitle">Trotineta mea</p>
+<label class="field" for="scooterName">Nume</label><input id="scooterName" placeholder="Trotineta mea" value="KuKirin G2 Master">
+<label class="field" for="scooterModel">Model</label><input id="scooterModel" value="KuKirin G2 Master">
+<button class="action" id="saveBtn">Salvează</button>
+<div class="spec"><span>Tensiune nominală</span><strong>52 V</strong></div>
+<div class="spec"><span>Capacitate baterie</span><strong>20,8 Ah</strong></div>
+<p class="note">Specificații nominale din manual; nu reprezintă tensiunea sau procentul live.</p>
+</section>
+<section class="section">
+<p class="sectionTitle">Temă personalizabilă</p>
+<div class="themeGrid">
+<button class="theme" data-theme-choice="midnight" aria-pressed="true"><span class="swatch" style="background:#070b12"></span>Midnight</button>
+<button class="theme" data-theme-choice="violet" aria-pressed="false"><span class="swatch" style="background:#c4a1ff"></span>Violet</button>
+<button class="theme" data-theme-choice="emerald" aria-pressed="false"><span class="swatch" style="background:#54e6a0"></span>Emerald</button>
+<button class="theme" data-theme-choice="amber" aria-pressed="false"><span class="swatch" style="background:#ffc56b"></span>Amber</button>
+<button class="theme" data-theme-choice="light" aria-pressed="false"><span class="swatch" style="background:#eef3f8"></span>Light</button>
+</div>
+</section>
+<section class="section">
+<p class="sectionTitle">Bluetooth · KuKirin</p>
+<button class="action" id="connectBtn">Caută KuKirin prin Bluetooth</button>
+<button class="action secondary" id="disconnectBtn" hidden>Deconectează</button>
+<div class="status" id="btStatus">Neconectat. Pe iPhone, Safari nu oferă Web Bluetooth; site-ul nu poate citi direct datele trotinetei.</div>
+<p class="note">Chiar și într-un browser compatibil, citirea tensiunii și procentului necesită protocolul BLE exact pentru versiunea trotinetei. Nu vom afișa valori estimate ca și cum ar fi măsurători reale.</p>
+</section>
+</aside>
 <script>
-(()=>{const speedEl=document.getElementById('speed'),dot=document.getElementById('gpsDot'),btn=document.getElementById('startBtn'),drawer=document.getElementById('drawer'),shade=document.getElementById('shade'),status=document.getElementById('btStatus');let watch=null,smoothed=0;function menu(v){drawer.classList.toggle('open',v);shade.classList.toggle('open',v)}document.getElementById('menuBtn').onclick=()=>menu(true);document.getElementById('closeBtn').onclick=()=>menu(false);shade.onclick=()=>menu(false);function stop(){if(watch!==null)navigator.geolocation.clearWatch(watch);watch=null;dot.classList.remove('on');btn.textContent='Pornește GPS'}function start(){if(!navigator.geolocation){btn.textContent='GPS indisponibil';return}if(watch!==null){stop();return}btn.textContent='Oprește GPS';watch=navigator.geolocation.watchPosition(p=>{dot.classList.add('on');let v=p.coords.speed>=0?p.coords.speed*3.6:0;if(v<1.2)v=0;smoothed=smoothed*.55+v*.45;speedEl.textContent=Math.round(smoothed)},e=>{stop();btn.textContent=e.code===1?'Permite accesul GPS':'Încearcă din nou'},{enableHighAccuracy:true,maximumAge:500,timeout:20000})}btn.onclick=start;document.getElementById('saveBtn').onclick=()=>{let n=document.getElementById('scooterName').value.trim(),m=document.getElementById('scooterModel').value.trim();status.textContent=n||m?'Trotinetă salvată: '+(n||'Fără nume')+(m?' · '+m:'')+'.':'Introdu un nume sau un model.'};document.getElementById('connectBtn').onclick=()=>{status.textContent='Pe iPhone, Safari nu oferă Web Bluetooth. Pentru conectare reală și citirea voltajului trebuie identificat protocolul trotinetei și folosită o punte compatibilă.'}})();
-</script></body></html>
+(()=>{
+const $=id=>document.getElementById(id);
+const speedEl=$('speed'),dot=$('gpsDot'),btn=$('startBtn'),drawer=$('drawer'),shade=$('shade'),status=$('btStatus');
+let watch=null,smoothed=0,bleDevice=null,bleServer=null;
+function menu(open){drawer.classList.toggle('open',open);shade.classList.toggle('open',open)}
+$('menuBtn').onclick=()=>menu(true);$('closeBtn').onclick=()=>menu(false);shade.onclick=()=>menu(false);
+function stopGps(){if(watch!==null)navigator.geolocation.clearWatch(watch);watch=null;dot.classList.remove('on');btn.textContent='Pornește GPS'}
+function startGps(){
+ if(!navigator.geolocation){btn.textContent='GPS indisponibil';return}
+ if(watch!==null){stopGps();return}
+ btn.textContent='Oprește GPS';
+ watch=navigator.geolocation.watchPosition(p=>{
+  dot.classList.add('on');let v=p.coords.speed>=0?p.coords.speed*3.6:0;if(v<1.2)v=0;
+  smoothed=smoothed*.55+v*.45;speedEl.textContent=Math.round(smoothed);
+ },e=>{stopGps();btn.textContent=e.code===1?'Permite accesul GPS':'Încearcă din nou'},
+ {enableHighAccuracy:true,maximumAge:500,timeout:20000});
+}
+btn.onclick=startGps;
+$('saveBtn').onclick=()=>{localStorage.setItem('scooterName',$('scooterName').value);localStorage.setItem('scooterModel',$('scooterModel').value);status.textContent='Trotineta a fost salvată pe acest dispozitiv.'};
+document.querySelectorAll('[data-theme-choice]').forEach(b=>b.onclick=()=>{
+ const t=b.dataset.themeChoice;document.body.dataset.theme=t;localStorage.setItem('scooterTheme',t);
+ document.querySelectorAll('[data-theme-choice]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+});
+const savedTheme=localStorage.getItem('scooterTheme');if(savedTheme){document.body.dataset.theme=savedTheme;document.querySelectorAll('[data-theme-choice]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.themeChoice===savedTheme)))}
+const savedName=localStorage.getItem('scooterName'),savedModel=localStorage.getItem('scooterModel');if(savedName)$('scooterName').value=savedName;if(savedModel)$('scooterModel').value=savedModel;
+function disconnected(){bleServer=null;bleDevice=null;$('disconnectBtn').hidden=true}
+$('connectBtn').onclick=async()=>{
+ if(!navigator.bluetooth){status.textContent='Bluetooth indisponibil în acest browser. Safari pe iPhone nu implementează Web Bluetooth, deci conexiunea directă din acest site nu este posibilă.';return}
+ try{
+  status.textContent='Alege KuKirin G2 Master din lista dispozitivelor Bluetooth…';
+  bleDevice=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:[]});
+  status.textContent='Dispozitiv selectat: '+(bleDevice.name||'dispozitiv BLE')+'. Se încearcă conectarea…';
+  bleDevice.addEventListener('gattserverdisconnected',()=>{disconnected();status.textContent='Dispozitiv deconectat.'});
+  if(!bleDevice.gatt){status.textContent='Dispozitivul selectat nu oferă conexiune GATT.';return}
+  bleServer=await bleDevice.gatt.connect();
+  $('disconnectBtn').hidden=false;
+  status.textContent='Conexiune BLE stabilită cu '+(bleDevice.name||'dispozitivul ales')+'. Telemetria KuKirin nu este încă decodificată; tensiunea și procentul rămân neafișate până la validarea protocolului exact.';
+ }catch(e){status.textContent=e&&e.name==='NotFoundError'?'Nu a fost selectat niciun dispozitiv.':'Conectarea Bluetooth nu a reușit: '+(e.message||e.name)}
+};
+$('disconnectBtn').onclick=()=>{if(bleDevice&&bleDevice.gatt&&bleDevice.gatt.connected)bleDevice.gatt.disconnect();disconnected();status.textContent='Bluetooth deconectat.'};
+})();
+</script>
+</body>
+</html>
