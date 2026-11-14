@@ -65,14 +65,14 @@ input,select{width:100%;padding:12px;border-radius:12px;border:1px solid var(--l
 .gps{width:10px;height:10px;box-shadow:0 0 0 5px var(--accentSoft)}
 .gps.on{background:#52e0a0;box-shadow:0 0 0 5px #52e0a022,0 0 18px #52e0a0}
 @media(orientation:landscape){.screen{padding:12px 70px;gap:10px}.screen:before{width:min(48vw,300px);top:50%}.speed{font-size:clamp(100px,22vw,190px)}}
-</style>
+.speedline{min-height:1.15em;align-items:center;overflow:visible;margin:0 0 6px;gap:10px}.speed{display:inline-block;font-size:clamp(112px,32vw,218px);line-height:1.12;letter-spacing:-.045em;padding:.02em .08em .08em .02em;overflow:visible}.screen{gap:18px}.screen:before{width:min(76vw,370px);transform:translate(-50%,-63%)}.readouts{display:flex;justify-content:center;width:min(360px,90%)}.distanceCard{width:100%;text-align:center;padding:14px 18px;border-color:var(--accentSoft)}.distanceCard .readoutValue{font-size:29px}.distanceCard .readoutValue em{font-size:15px}@media(orientation:landscape){.screen{gap:8px}.speed{font-size:clamp(100px,20vw,180px);line-height:1.12}.screen:before{width:min(44vw,260px)}.readouts{max-width:300px}.distanceCard{padding:8px 14px}}</style>
 </head>
 <body data-theme="midnight">
 <main class="screen">
 <button class="menuBtn" id="menuBtn" aria-label="Meniu">☰</button>
 <div class="gps" id="gpsDot"></div>
 <div class="speedline"><span class="speed" id="speed">0</span><span class="unit">km/h</span></div>
-<div class="readouts"><div class="readout"><div class="readoutLabel">Precizie GPS</div><div class="readoutValue" id="gpsAccuracy">— <em>m</em></div><div class="readoutHint" id="gpsQuality">Așteaptă semnalul GPS</div></div><div class="readout"><div class="readoutLabel">Sursă viteză</div><div class="readoutValue" id="speedSource">GPS</div><div class="readoutHint" id="gpsUpdated">Nicio citire încă</div></div></div><div class="maxSpeed"><div class="maxLabel">Viteză maximă atinsă</div><div class="maxValue"><span id="maxSpeed">0</span> <span>km/h</span></div></div>
+<div class="readouts"><div class="readout distanceCard"><div class="readoutLabel">Distanță parcursă</div><div class="readoutValue" id="tripDistance">0 <em>m</em></div><div class="readoutHint" id="tripSub">0,000 km</div></div></div><div class="maxSpeed"><div class="maxLabel">Viteză maximă atinsă</div><div class="maxValue"><span id="maxSpeed">0</span> <span>km/h</span></div></div>
 <button class="start" id="startBtn">Pornește GPS</button>
 </main>
 <canvas class="confettiCanvas" id="confettiCanvas" aria-hidden="true"></canvas>
@@ -109,7 +109,7 @@ input,select{width:100%;padding:12px;border-radius:12px;border:1px solid var(--l
 (()=>{
 const $=id=>document.getElementById(id);
 const speedEl=$('speed'),maxSpeedEl=$('maxSpeed'),dot=$('gpsDot'),btn=$('startBtn'),drawer=$('drawer'),shade=$('shade'),status=$('btStatus');
-let watch=null,smoothed=0,maxSpeed=0,nextMilestone=10,bleDevice=null,bleServer=null,lastPosition=null,lastAcceptedTime=0;
+let watch=null,smoothed=0,maxSpeed=0,nextMilestone=10,bleDevice=null,bleServer=null,lastPosition=null,lastAcceptedTime=0,tripMeters=0;
 let confettiEnabled=localStorage.getItem("confettiEnabled")!=="false";
 const confettiCanvas=$("confettiCanvas"),confettiCtx=confettiCanvas.getContext("2d");let confettiParticles=[],confettiFrame=null;
 function resizeConfetti(){confettiCanvas.width=window.innerWidth*devicePixelRatio;confettiCanvas.height=window.innerHeight*devicePixelRatio;confettiCtx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0)}
@@ -119,16 +119,19 @@ function animateConfetti(){confettiCtx.clearRect(0,0,window.innerWidth,window.in
 $("confettiToggle").checked=confettiEnabled;$("confettiToggle").onchange=e=>{confettiEnabled=e.target.checked;localStorage.setItem("confettiEnabled",String(confettiEnabled));if(!confettiEnabled){confettiParticles=[];if(confettiFrame)cancelAnimationFrame(confettiFrame);confettiFrame=null;confettiCtx.clearRect(0,0,window.innerWidth,window.innerHeight)}};
 function menu(open){drawer.classList.toggle('open',open);shade.classList.toggle('open',open)}
 $('menuBtn').onclick=()=>menu(true);$('closeBtn').onclick=()=>menu(false);shade.onclick=()=>menu(false);
+function updateTripDistance(){
+ const meters=Math.floor(tripMeters);
+ $('tripDistance').innerHTML=meters>=1000?(tripMeters/1000).toFixed(2).replace('.',',')+' <em>km</em>':meters+' <em>m</em>';
+ $('tripSub').textContent=meters>=1000?meters.toLocaleString('ro-RO')+' m':(tripMeters/1000).toFixed(3).replace('.',',')+' km';
+}
 function stopGps(){if(watch!==null)navigator.geolocation.clearWatch(watch);watch=null;dot.classList.remove('on');btn.textContent='Pornește GPS'}
 function startGps(){
  if(!navigator.geolocation){btn.textContent='GPS indisponibil';return}
  if(watch!==null){stopGps();return}
  btn.textContent='Oprește GPS';
- maxSpeed=0;maxSpeedEl.textContent='0';smoothed=0;nextMilestone=10;lastPosition=null;lastAcceptedTime=0;$('gpsAccuracy').innerHTML='— <em>m</em>';$('gpsQuality').textContent='Se caută sateliți';$('speedSource').textContent='GPS';$('gpsUpdated').textContent='Se așteaptă prima citire';
+ maxSpeed=0;maxSpeedEl.textContent='0';smoothed=0;nextMilestone=10;lastPosition=null;lastAcceptedTime=0;tripMeters=0;updateTripDistance();
  watch=navigator.geolocation.watchPosition(p=>{
   const c=p.coords, now=p.timestamp||Date.now(), accuracy=Number.isFinite(c.accuracy)?c.accuracy:999;
-  $('gpsAccuracy').innerHTML=Math.round(accuracy)+' <em>m</em>';
-  $('gpsQuality').textContent=accuracy<=8?'Semnal excelent':accuracy<=15?'Semnal bun':accuracy<=25?'Semnal acceptabil':'Semnal slab — citire ignorată';
   if(accuracy>25 || Date.now()-now>8000)return;
   let raw=Number.isFinite(c.speed)&&c.speed>=0?c.speed*3.6:null, source='GPS direct';
   if(raw===null && lastPosition){
@@ -139,7 +142,15 @@ function startGps(){
     if(dt>=0.6&&dt<=5&&meters>=2)raw=meters/dt*3.6;
     source='Calcul GPS';
   }
-  lastPosition={lat:c.latitude,lon:c.longitude,time:now};
+  if(lastPosition){
+    const dt=(now-lastPosition.time)/1000;
+    const rad=x=>x*Math.PI/180,dLat=rad(c.latitude-lastPosition.lat),dLon=rad(c.longitude-lastPosition.lon);
+    const a=Math.sin(dLat/2)**2+Math.cos(rad(lastPosition.lat))*Math.cos(rad(c.latitude))*Math.sin(dLon/2)**2;
+    const segment=6371000*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+    const noiseFloor=Math.max(2,(accuracy+lastPosition.accuracy)*.18);
+    if(dt>=0.5&&dt<=10&&segment>noiseFloor&&segment<80&&accuracy<=20&&lastPosition.accuracy<=20){tripMeters+=segment;updateTripDistance();}
+  }
+  lastPosition={lat:c.latitude,lon:c.longitude,time:now,accuracy};
   if(raw===null||!Number.isFinite(raw)||raw>120)return;
   if(lastAcceptedTime && now-lastAcceptedTime<250)return;
   if(lastAcceptedTime && Math.abs(raw-smoothed)>38 && now-lastAcceptedTime<1800)return;
@@ -150,9 +161,9 @@ function startGps(){
   lastAcceptedTime=now;dot.classList.add('on');
   speedEl.textContent=smoothed.toFixed(1);
   maxSpeed=Math.max(maxSpeed,smoothed);maxSpeedEl.textContent=maxSpeed.toFixed(1);
-  $('speedSource').textContent=source;$('gpsUpdated').textContent='Actualizat acum';
+
   if(smoothed>=nextMilestone){burstConfetti();nextMilestone+=10;}
- },e=>{stopGps();$('gpsQuality').textContent='Semnal GPS indisponibil';btn.textContent=e.code===1?'Permite accesul GPS':'Încearcă din nou'},
+ },e=>{stopGps();btn.textContent=e.code===1?'Permite accesul GPS':'Încearcă din nou'},
  {enableHighAccuracy:true,maximumAge:0,timeout:25000});
 }
 btn.onclick=startGps;
