@@ -17,7 +17,7 @@ body[data-theme="amber"]{--bg:#171006;--surface:#2a1d0c;--surface2:#3a2910;--acc
 body[data-theme="light"]{--bg:#eef3f8;--surface:#ffffff;--surface2:#e3ebf4;--text:#0b1420;--muted:#58687b;--accent:#087eae;--accentSoft:#087eae18;--glow:#087eae20;--line:#0b14201a}
 .screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:calc(env(safe-area-inset-top) + 66px) 18px calc(env(safe-area-inset-bottom) + 32px);background:radial-gradient(circle at 50% 42%,var(--surface2) 0,var(--bg) 66%);gap:26px}
 .speedline{display:flex;align-items:baseline;justify-content:center;gap:10px;white-space:nowrap}
-.speed{font-size:clamp(112px,33vw,230px);font-weight:650;line-height:.9;letter-spacing:-.085em;font-variant-numeric:tabular-nums}
+.speed{font-size:clamp(112px,33vw,230px);font-weight:650;line-height:.9;letter-spacing:-.085em;font-variant-numeric:tabular-nums}.maxSpeed{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:10px 18px;text-align:center;min-width:155px}.maxLabel{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}.maxValue{font-size:25px;font-weight:750;font-variant-numeric:tabular-nums;margin-top:3px}.maxValue span{font-size:13px;color:var(--accent)}
 .unit{font-size:clamp(20px,5vw,30px);font-weight:650;color:var(--accent)}
 .gps{position:absolute;top:max(22px,env(safe-area-inset-top));left:50%;width:9px;height:9px;transform:translateX(-50%);border-radius:50%;background:#64748b}
 .gps.on{background:#52e0a0;box-shadow:0 0 15px #52e0a0}
@@ -56,6 +56,7 @@ input,select{width:100%;padding:12px;border-radius:12px;border:1px solid var(--l
 <button class="menuBtn" id="menuBtn" aria-label="Meniu">☰</button>
 <div class="gps" id="gpsDot"></div>
 <div class="speedline"><span class="speed" id="speed">0</span><span class="unit">km/h</span></div>
+<div class="maxSpeed"><div class="maxLabel">Viteză maximă atinsă</div><div class="maxValue"><span id="maxSpeed">0</span> <span>km/h</span></div></div>
 <button class="start" id="startBtn">Pornește GPS</button>
 </main>
 <div class="shade" id="shade"></div>
@@ -89,8 +90,8 @@ input,select{width:100%;padding:12px;border-radius:12px;border:1px solid var(--l
 <script>
 (()=>{
 const $=id=>document.getElementById(id);
-const speedEl=$('speed'),dot=$('gpsDot'),btn=$('startBtn'),drawer=$('drawer'),shade=$('shade'),status=$('btStatus');
-let watch=null,smoothed=0,bleDevice=null,bleServer=null;
+const speedEl=$('speed'),maxSpeedEl=$('maxSpeed'),dot=$('gpsDot'),btn=$('startBtn'),drawer=$('drawer'),shade=$('shade'),status=$('btStatus');
+let watch=null,smoothed=0,maxSpeed=0,bleDevice=null,bleServer=null;
 function menu(open){drawer.classList.toggle('open',open);shade.classList.toggle('open',open)}
 $('menuBtn').onclick=()=>menu(true);$('closeBtn').onclick=()=>menu(false);shade.onclick=()=>menu(false);
 function stopGps(){if(watch!==null)navigator.geolocation.clearWatch(watch);watch=null;dot.classList.remove('on');btn.textContent='Pornește GPS'}
@@ -98,9 +99,11 @@ function startGps(){
  if(!navigator.geolocation){btn.textContent='GPS indisponibil';return}
  if(watch!==null){stopGps();return}
  btn.textContent='Oprește GPS';
+ maxSpeed=0;maxSpeedEl.textContent='0';smoothed=0;
  watch=navigator.geolocation.watchPosition(p=>{
   dot.classList.add('on');let v=p.coords.speed>=0?p.coords.speed*3.6:0;if(v<1.2)v=0;
   smoothed=smoothed*.55+v*.45;speedEl.textContent=Math.round(smoothed);
+  maxSpeed=Math.max(maxSpeed,smoothed);maxSpeedEl.textContent=Math.round(maxSpeed);
  },e=>{stopGps();btn.textContent=e.code===1?'Permite accesul GPS':'Încearcă din nou'},
  {enableHighAccuracy:true,maximumAge:500,timeout:20000});
 }
